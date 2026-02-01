@@ -67,5 +67,5 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "Project Echoes of Dawn and Dusk.slnx"
+    "dotnet.defaultSolution": "Echoes-of-Dawn-and-Dusk.slnx"
 }
