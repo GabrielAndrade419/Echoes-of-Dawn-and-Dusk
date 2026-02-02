@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Echoes.Inputs;
+using Unity.Cinemachine;
 
 public class PlayerController : MonoBehaviour
 {
@@ -8,6 +9,13 @@ public class PlayerController : MonoBehaviour
     public float walkSpeed = 3.5f;
     public float runSpeed = 7f;
     public float rotationSpeed = 15f;
+
+    [Header("Camera Zoom")] 
+    public CinemachineCamera cineCamera; 
+    public float minZoom = 5f;  
+    public float maxZoom = 25f; 
+    public float zoomSpeed = 2f; 
+    public float zoomDamping = 5f;
     
     [Header("Combat Settings")]
     public float combatModeDuration = 5f;
@@ -27,7 +35,8 @@ public class PlayerController : MonoBehaviour
     private Vector2 _moveInput;
     private Vector2 _mousePos;
     private bool _isSprinting;
-    
+    private float _targetZoom; 
+    private CinemachinePositionComposer _posComposer;
     private bool _isArmed;
     private bool _isInCombatMode;
     private float _lastAttackTime;
@@ -42,6 +51,16 @@ public class PlayerController : MonoBehaviour
         
         if (characterController == null) characterController = GetComponent<CharacterController>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (cineCamera != null)
+        {
+            _posComposer = cineCamera.GetComponent<CinemachinePositionComposer>();
+            
+            if (_posComposer != null)
+            {
+                //Debug.Log("ALTURA PADRÃO DA CÂMERA: " + _posComposer.CameraDistance);
+                _targetZoom = _posComposer.CameraDistance;
+            }
+        }
 
         SetVisualWeaponState(startArmed);
     }
@@ -52,6 +71,7 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         ReadInput();
+        HandleZoom();
         HandleRotation();
         HandleMovement();
         HandleCombatStanceTimer();
@@ -72,6 +92,22 @@ public class PlayerController : MonoBehaviour
         {
             TriggerAttack();
         }
+    }
+
+    private void HandleZoom()
+    {
+        if (_posComposer == null) return;
+
+        float scrollInput = _inputActions.Player.Zoom.ReadValue<float>();
+
+        //if (scrollInput != 0) Debug.Log("Rodinha detectada: " + scrollInput);
+
+        if (scrollInput != 0)
+        {
+            _targetZoom -= scrollInput * zoomSpeed; 
+            _targetZoom = Mathf.Clamp(_targetZoom, minZoom, maxZoom);
+        }
+        _posComposer.CameraDistance = Mathf.Lerp(_posComposer.CameraDistance, _targetZoom, Time.deltaTime * zoomDamping);
     }
 
     private void HandleMovement()
