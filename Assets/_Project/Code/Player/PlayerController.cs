@@ -23,6 +23,7 @@ public class PlayerController : MonoBehaviour
     [Header("Combat Visuals")]
     public GameObject weaponInHandModel;
     public GameObject weaponInSheathModel;
+    public TrailRenderer swordTrail;
     public bool startArmed = false;
 
     [Header("References")]
@@ -200,5 +201,22 @@ public class PlayerController : MonoBehaviour
 
         if (weaponInHandModel != null) weaponInHandModel.SetActive(_isArmed);
         if (weaponInSheathModel != null) weaponInSheathModel.SetActive(!_isArmed);
+    }
+
+    public void EnableTrail()
+    {
+        if (swordTrail != null)
+        {
+            swordTrail.Clear(); // Limpa rastros velhos
+            swordTrail.emitting = true; // Começa a riscar
+        }
+    }
+
+    public void DisableTrail()
+    {
+        if (swordTrail != null)
+        {
+            swordTrail.emitting = false; // Para de riscar
+        }
     }
 }
