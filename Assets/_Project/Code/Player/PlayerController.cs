@@ -8,7 +8,9 @@ public class PlayerController : MonoBehaviour
     public float walkSpeed = 3.5f;
     public float runSpeed = 7f;
     public float rotationSpeed = 15f;
-    public float acceleration = 10f;
+    
+    [Header("Combat Settings")]
+    public float combatModeDuration = 5f;
 
     [Header("Combat Visuals")]
     public GameObject weaponInHandModel;
@@ -25,7 +27,10 @@ public class PlayerController : MonoBehaviour
     private Vector2 _moveInput;
     private Vector2 _mousePos;
     private bool _isSprinting;
+    
     private bool _isArmed;
+    private bool _isInCombatMode;
+    private float _lastAttackTime;
 
     private Vector2 _currentAnimationBlend;
     private Vector2 _animationVelocity; 
@@ -38,7 +43,7 @@ public class PlayerController : MonoBehaviour
         if (characterController == null) characterController = GetComponent<CharacterController>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
 
-        SetWeaponState(startArmed);
+        SetVisualWeaponState(startArmed);
     }
 
     private void OnEnable() => _inputActions.Player.Enable();
@@ -49,19 +54,24 @@ public class PlayerController : MonoBehaviour
         ReadInput();
         HandleRotation();
         HandleMovement();
-
-        if (Keyboard.current.rKey.wasPressedThisFrame)
-        {
-            ToggleWeapon();
-        }
+        HandleCombatStanceTimer();
     }
 
     private void ReadInput()
     {
         _moveInput = _inputActions.Player.Move.ReadValue<Vector2>();
         _mousePos = Mouse.current.position.ReadValue();
-        
         _isSprinting = _inputActions.Player.Sprint.IsPressed();
+
+        if (Keyboard.current.rKey.wasPressedThisFrame)
+        {
+            SetVisualWeaponState(!_isArmed);
+        }
+
+        if (Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            TriggerAttack();
+        }
     }
 
     private void HandleMovement()
@@ -90,8 +100,11 @@ public class PlayerController : MonoBehaviour
 
         if (_moveInput.magnitude < 0.1f) _currentAnimationBlend = Vector2.zero;
 
-        animator.SetFloat("InputX", _currentAnimationBlend.x);
-        animator.SetFloat("InputZ", _currentAnimationBlend.y);
+        if (animator != null)
+        {
+            animator.SetFloat("InputX", _currentAnimationBlend.x);
+            animator.SetFloat("InputZ", _currentAnimationBlend.y);
+        }
     }
 
     private void HandleRotation()
@@ -113,18 +126,43 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void ToggleWeapon()
+    private void TriggerAttack()
     {
-        SetWeaponState(!_isArmed);
+        if (!_isArmed)
+        {
+            SetVisualWeaponState(true);
+        }
+
+        _isInCombatMode = true;
+        _lastAttackTime = Time.time;
+
+        if (animator != null)
+        {
+            animator.SetBool("InCombat", true);
+            animator.SetTrigger("Attack");
+        }
     }
 
-    public void SetWeaponState(bool armed)
+    private void HandleCombatStanceTimer()
+    {
+        if (!_isInCombatMode) return;
+
+        if (Time.time - _lastAttackTime > combatModeDuration)
+        {
+            _isInCombatMode = false;
+            
+            if (animator != null)
+            {
+                animator.SetBool("InCombat", false);
+            }
+        }
+    }
+
+    public void SetVisualWeaponState(bool armed)
     {
         _isArmed = armed;
 
-
         if (weaponInHandModel != null) weaponInHandModel.SetActive(_isArmed);
         if (weaponInSheathModel != null) weaponInSheathModel.SetActive(!_isArmed);
-        
     }
 }
